@@ -1,26 +1,44 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Sparkles, Mail, Lock, User, Hash, Building, GraduationCap } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, GraduationCap, ArrowUpRight, ArrowLeft } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+import useThemeStore from '../../store/useThemeStore';
 import toast from 'react-hot-toast';
+import FloatingControlPill from '../../components/FloatingControlPill';
+import GoogleSignInButton from '../../components/GoogleSignInButton';
+import SlicedWaves from '../../components/SlicedWaves';
 
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { register, isLoading } = useAuthStore();
-  const [showPassword, setShowPassword] = useState(false);
+  const { isDark } = useThemeStore();
+
+  const queryParams = new URLSearchParams(location.search);
+  const emailParam = queryParams.get('email') || '';
+  const nameParam = queryParams.get('name') || '';
+  const roleParam = queryParams.get('role') || 'student';
+
   const [form, setForm] = useState({
-    name: '',
-    email: '',
+    name: nameParam,
+    email: emailParam,
     password: '',
-    role: 'student',
-    rollNumber: '',
+    confirmPassword: '',
+    role: roleParam,
     department: 'Computer Science',
     year: '3',
-    semester: '5',
+    semester: '6',
+    rollNumber: '',
   });
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (emailParam) setForm((f) => ({ ...f, email: emailParam }));
+    if (nameParam) setForm((f) => ({ ...f, name: nameParam }));
+    if (roleParam) setForm((f) => ({ ...f, role: roleParam }));
+  }, [emailParam, nameParam, roleParam]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,16 +50,25 @@ const Register = () => {
       toast.error('Password must be at least 6 characters');
       return;
     }
+    if (form.password !== form.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
 
     const payload = {
-      ...form,
-      year: form.year ? Number(form.year) : undefined,
-      semester: form.semester ? Number(form.semester) : undefined,
+      name: form.name.trim(),
+      email: form.email.trim(),
+      password: form.password,
+      role: form.role,
+      department: form.department,
+      year: parseInt(form.year, 10),
+      semester: parseInt(form.semester, 10),
+      rollNumber: form.rollNumber.trim() || undefined,
     };
 
     const result = await register(payload);
     if (result.success) {
-      toast.success('Account created successfully! Welcome to UniSphere.');
+      toast.success(result.message || 'Welcome to UniSphere! Your account is active.');
       navigate('/dashboard', { replace: true });
     } else {
       toast.error(result.message || 'Registration failed');
@@ -49,160 +76,260 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen ambient-gradient-bg flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Soft Ambient Radial Blur Accents */}
-      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-indigo-400/20 dark:bg-indigo-600/15 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-blue-400/20 dark:bg-blue-600/15 blur-3xl pointer-events-none" />
+    <div className="relative min-h-screen bg-[#f8f9fd] text-[#121212] dark:bg-[#0e0f12] dark:text-[#f3f4f6] flex flex-col justify-between p-4 sm:p-6 transition-colors duration-200 overflow-hidden">
+      {/* SlicedWaves Background Animation */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-85 dark:opacity-40">
+        <SlicedWaves
+          color1={isDark ? '#c084fc' : '#f5dde9'}
+          color2={isDark ? '#581c87' : '#d1c1ea'}
+          color3={isDark ? '#38bdf8' : '#c4e6ec'}
+          columns={14}
+          rows={8}
+          barThickness={0.1}
+          speed={0.35}
+          travel={0.7}
+          waveSpread={0.9}
+          rowOffset={1.0}
+          softness={0.05}
+          glow={0}
+          brightness={1.0}
+          contrast={1.0}
+          opacity={0.9}
+          orientation="horizontal"
+          alternate={false}
+          mouseInteraction={true}
+          mouseStrength={1}
+          mouseRadius={0.3}
+          grain={true}
+          grainIntensity={0.018}
+          lightMode={!isDark}
+        />
+      </div>
 
-      {/* Glassmorphism Auth Card */}
-      <motion.div
-        className="glass-panel w-full max-w-lg p-8 relative shadow-2xl"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-      >
-        {/* Brand Header */}
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-3">
-            <GraduationCap className="w-7 h-7 text-white" />
+      {/* Header */}
+      <header className="relative z-10 max-w-6xl mx-auto w-full flex items-center justify-between py-4">
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="w-8 h-8 rounded-full bg-[#111827] dark:bg-white flex items-center justify-center text-white dark:text-[#111827] shadow-sm">
+            <GraduationCap className="w-4 h-4" />
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">UniSphere</span>
-            <span className="badge-info text-[10px]">AI v2</span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Create your smart university account</p>
-        </div>
+          <span className="font-extrabold text-lg tracking-tight text-[#111827] dark:text-white">UniSphere</span>
+        </Link>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Role selector */}
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
-            {['student', 'admin'].map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setForm({ ...form, role: r })}
-                className={`py-2 rounded-lg text-xs font-semibold capitalize transition-all ${
-                  form.role === r
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {r === 'admin' ? 'Admin / Faculty' : 'Student'}
-              </button>
-            ))}
-          </div>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4b5563] dark:text-[#9ca3af] hover:text-black dark:hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Home</span>
+        </Link>
+      </header>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="label">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  id="reg-name"
-                  type="text"
-                  required
-                  className="input-field pl-10 text-xs"
-                  placeholder="Alex Rivera"
-                  value={form.name}
-                  onChange={set('name')}
-                />
-              </div>
+      {/* Main Register Container - Wider width with normal compact height & font sizing */}
+      <main className="relative z-10 flex-1 flex items-center justify-center py-6 px-3">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="w-full max-w-[640px] bg-white/95 dark:bg-[#18191d]/95 backdrop-blur-xl border border-[#e2e5f0] dark:border-[#272a33] rounded-[2rem] p-6 sm:p-9 shadow-2xl text-left card-depth"
+        >
+          <div className="flex items-center justify-between mb-5">
+            <div className="w-12 h-12 rounded-full bg-[#e6e9f6] dark:bg-[#252831] flex items-center justify-center text-[#111827] dark:text-white">
+              <GraduationCap className="w-6 h-6" />
             </div>
-
-            <div>
-              <label className="label">University Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  id="reg-email"
-                  type="email"
-                  required
-                  className="input-field pl-10 text-xs"
-                  placeholder="alex@uni.edu"
-                  value={form.email}
-                  onChange={set('email')}
-                />
-              </div>
-            </div>
+            <span className="badge-chip">Instant Registration</span>
           </div>
 
-          <div>
-            <label className="label">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                id="reg-password"
-                type={showPassword ? 'text' : 'password'}
-                required
-                className="input-field pl-10 pr-10 text-xs"
-                placeholder="Minimum 6 characters"
-                value={form.password}
-                onChange={set('password')}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#111827] dark:text-white mb-2">
+            Create your account.
+          </h1>
+          <p className="text-xs sm:text-sm text-[#4b5563] dark:text-[#9ca3af] leading-relaxed mb-6">
+            Get started immediately with Google or your university email address.
+          </p>
+
+          {/* Google Sign In Option */}
+          <div className="mb-5">
+            <GoogleSignInButton
+              role={form.role}
+              department={form.department}
+              year={form.year}
+              semester={form.semester}
+              rollNumber={form.rollNumber}
+              onSuccess={() => navigate('/dashboard', { replace: true })}
+            />
           </div>
 
-          {form.role === 'student' && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-              <div className="col-span-2 sm:col-span-2">
-                <label className="label">Department</label>
-                <input
-                  type="text"
-                  className="input-field text-xs"
-                  placeholder="Computer Science"
-                  value={form.department}
-                  onChange={set('department')}
-                />
+          <div className="relative flex items-center justify-center mb-5">
+            <div className="border-t border-[#e2e5f0] dark:border-[#272a33] w-full" />
+            <span className="bg-white dark:bg-[#18191d] px-3 text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af]">
+              or sign up with email
+            </span>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="label">Full Name</label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    id="register-name"
+                    type="text"
+                    required
+                    placeholder="Alex Rivers"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="input-field pl-11 rounded-full bg-[#f8f9fd] dark:bg-[#131417] border-[#e2e5f0] dark:border-[#282a32]"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="label">Year</label>
-                <select className="input-field text-xs" value={form.year} onChange={set('year')}>
-                  {[1, 2, 3, 4].map((y) => (
-                    <option key={y} value={y}>Year {y}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="label">Semester</label>
-                <select className="input-field text-xs" value={form.semester} onChange={set('semester')}>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-                    <option key={s} value={s}>Sem {s}</option>
-                  ))}
-                </select>
+                <label className="label">University Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    id="register-email"
+                    type="email"
+                    required
+                    placeholder="student@university.edu"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="input-field pl-11 rounded-full bg-[#f8f9fd] dark:bg-[#131417] border-[#e2e5f0] dark:border-[#282a32]"
+                  />
+                </div>
               </div>
             </div>
-          )}
 
-          <button
-            id="reg-submit"
-            type="submit"
-            disabled={isLoading}
-            className="btn-primary w-full py-2.5 mt-2 shadow-md shadow-indigo-600/20"
-          >
-            {isLoading ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              'Create Account'
+            {/* Role Toggle */}
+            <div>
+              <label className="label">Role on Campus</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, role: 'student' })}
+                  className={`py-2.5 px-4 rounded-full text-xs font-bold border transition-all ${
+                    form.role === 'student'
+                      ? 'bg-[#111827] text-white dark:bg-white dark:text-black border-transparent shadow-sm'
+                      : 'bg-[#f8f9fd] dark:bg-[#141518] text-slate-700 dark:text-slate-300 border-[#e2e5f0] dark:border-[#2b2e38]'
+                  }`}
+                >
+                  Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, role: 'faculty' })}
+                  className={`py-2.5 px-4 rounded-full text-xs font-bold border transition-all ${
+                    form.role === 'faculty'
+                      ? 'bg-[#111827] text-white dark:bg-white dark:text-black border-transparent shadow-sm'
+                      : 'bg-[#f8f9fd] dark:bg-[#141518] text-slate-700 dark:text-slate-300 border-[#e2e5f0] dark:border-[#2b2e38]'
+                  }`}
+                >
+                  Faculty / Admin
+                </button>
+              </div>
+            </div>
+
+            {/* Student specific fields */}
+            {form.role === 'student' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="label">Department</label>
+                  <select
+                    value={form.department}
+                    onChange={(e) => setForm({ ...form, department: e.target.value })}
+                    className="input-field rounded-full bg-[#f8f9fd] dark:bg-[#131417] border-[#e2e5f0] dark:border-[#282a32]"
+                  >
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Information Tech">Information Tech</option>
+                    <option value="Electronics & Comm">Electronics & Comm</option>
+                    <option value="Mechanical Eng">Mechanical Eng</option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Semester</label>
+                  <select
+                    value={form.semester}
+                    onChange={(e) => setForm({ ...form, semester: e.target.value })}
+                    className="input-field rounded-full bg-[#f8f9fd] dark:bg-[#131417] border-[#e2e5f0] dark:border-[#282a32]"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                      <option key={s} value={s}>Semester {s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             )}
-          </button>
-        </form>
 
-        <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-5">
-          Already have an account?{' '}
-          <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">
-            Sign In
-          </Link>
-        </p>
-      </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="label">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    id="register-password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="input-field pl-11 rounded-full bg-[#f8f9fd] dark:bg-[#131417] border-[#e2e5f0] dark:border-[#282a32]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    id="register-confirm-password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="••••••••"
+                    value={form.confirmPassword}
+                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    className="input-field pl-11 rounded-full bg-[#f8f9fd] dark:bg-[#131417] border-[#e2e5f0] dark:border-[#282a32]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              id="register-submit"
+              type="submit"
+              disabled={isLoading}
+              className="btn-pill-primary w-full py-3.5 text-sm mt-4"
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              ) : (
+                <span className="text-container">
+                  <span className="text">
+                    <span>Create Account & Enter Platform</span>
+                    <ArrowUpRight className="w-4 h-4" />
+                  </span>
+                </span>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-[#e2e5f0] dark:border-[#22242a] text-center">
+            <p className="text-xs text-[#6b7280] dark:text-[#9ca3af]">
+              Already have an account?{' '}
+              <Link to="/login" className="font-bold text-[#111827] dark:text-white hover:underline">
+                Sign in instead
+              </Link>
+            </p>
+          </div>
+        </motion.div>
+      </main>
+
+      <footer className="relative z-10 max-w-6xl mx-auto w-full text-center py-4 text-xs text-[#9ca3af]">
+        UniSphere Academic Platform &bull; Instant Access Flow
+      </footer>
+
+      <FloatingControlPill />
     </div>
   );
 };

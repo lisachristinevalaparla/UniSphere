@@ -8,9 +8,12 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import AIChatWidget from './components/AIChatWidget';
+import FloatingControlPill from './components/FloatingControlPill';
 
+import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import VerifyOtp from './pages/auth/VerifyOtp';
 import Dashboard from './pages/Dashboard';
 import AIAssistantPage from './pages/AIAssistantPage';
 import AttendancePage from './pages/AttendancePage';
@@ -21,20 +24,24 @@ import EventsPage from './pages/EventsPage';
 import PlacementsPage from './pages/PlacementsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage';
+import ProfilePage from './pages/ProfilePage';
 
 const Layout = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-full min-h-screen bg-slate-50 dark:bg-[#0f172a] transition-colors duration-200">
+    <div className="relative flex h-full min-h-screen bg-[#f8f9fd] dark:bg-[#111215] text-[#121212] dark:text-[#f3f4f6] transition-colors duration-200">
+      {/* Shared Ambient 2-Color Gradient for Dashboard */}
+      <div className="animated-ambient-bg ambient-dashboard" />
+
       <Sidebar
         collapsed={sidebarCollapsed}
         onCollapse={setSidebarCollapsed}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col min-w-0 overflow-hidden">
         <Navbar onMenuToggle={() => setMobileOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <AnimatePresence mode="wait">
@@ -53,6 +60,9 @@ const Layout = ({ children }) => {
 
       {/* Floating AI Assistant Widget across all pages */}
       <AIChatWidget />
+      
+      {/* Corner floating mode pill */}
+      <FloatingControlPill />
     </div>
   );
 };
@@ -65,7 +75,7 @@ function App() {
       <Toaster
         position="top-right"
         toastOptions={{
-          className: 'glass-panel !bg-slate-900/90 !text-white !border-slate-700/60 !shadow-xl text-xs font-medium',
+          className: 'bg-white dark:bg-[#18191d] text-[#121212] dark:text-white border border-[#e2e5f0] dark:border-[#272a33] shadow-xl rounded-2xl text-xs font-semibold px-4 py-3',
           duration: 3500,
           success: {
             iconTheme: {
@@ -83,9 +93,13 @@ function App() {
       />
 
       <Routes>
-        {/* Public auth routes */}
+        {/* Landing Page */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* Public auth & OTP routes */}
         <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
+        <Route path="/verify-otp" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <VerifyOtp />} />
 
         {/* Protected workspace routes with Layout */}
         <Route
@@ -168,9 +182,17 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout><ProfilePage /></Layout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Catch-all fallback */}
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

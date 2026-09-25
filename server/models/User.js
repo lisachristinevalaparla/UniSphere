@@ -17,10 +17,13 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: function () {
+        return !this.googleId;
+      },
       minlength: 6,
       select: false,
     },
+    googleId: { type: String, trim: true },
     role: {
       type: String,
       enum: ['student', 'admin', 'faculty'],
@@ -34,8 +37,19 @@ const userSchema = new mongoose.Schema(
     cgpa: { type: Number, min: 0, max: 10 },
     phone: { type: String, trim: true },
     avatar: { type: String },
+    bio: { type: String, trim: true, default: '' },
+    github: { type: String, trim: true, default: '' },
+    linkedin: { type: String, trim: true, default: '' },
+    website: { type: String, trim: true, default: '' },
+    skills: [{ type: String, trim: true }],
     // Admin/faculty info
     employeeId: { type: String, trim: true },
+    designation: { type: String, trim: true, default: '' },
+    officeLocation: { type: String, trim: true, default: '' },
+    officeHours: { type: String, trim: true, default: '' },
+    researchAreas: { type: String, trim: true, default: '' },
+    // Verification status
+    isVerified: { type: Boolean, default: true },
     // Token storage
     refreshToken: { type: String, select: false },
   },

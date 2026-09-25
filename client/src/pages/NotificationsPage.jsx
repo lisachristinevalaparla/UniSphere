@@ -1,65 +1,25 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Check, CheckCheck, Trash2, BookOpen, ClipboardList, GraduationCap, Calendar, Briefcase } from 'lucide-react';
+import { Mail, CheckCheck, Trash2, BookOpen, ClipboardList, GraduationCap, Calendar, Briefcase, ShieldCheck } from 'lucide-react';
 import api from '../api/axios';
+import useAuthStore from '../store/authStore';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
-const typeIcons = {
-  assignment: ClipboardList,
-  exam: GraduationCap,
-  event: Calendar,
-  placement: Briefcase,
-  attendance: BookOpen,
-  material: BookOpen,
-  general: Bell,
-};
-
-const typeColors = {
-  assignment: '#F59E0B', exam: '#22D3EE', event: '#10B981',
-  placement: '#6366F1', attendance: '#F43F5E', general: '#8B5CF6',
-};
-
 const NotificationsPage = () => {
+  const { user } = useAuthStore();
   const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchNotifications = async () => {
     try {
       const res = await api.get('/notifications?limit=50');
-      setNotifications(res.data.notifications);
-      setUnreadCount(res.data.unreadCount);
+      setNotifications(res.data.notifications || []);
     } catch {}
     setLoading(false);
   };
 
   useEffect(() => { fetchNotifications(); }, []);
-
-  const markRead = async (id) => {
-    try {
-      await api.patch(`/notifications/${id}/read`);
-      setNotifications((prev) => prev.map((n) => n._id === id ? { ...n, isRead: true } : n));
-      setUnreadCount((c) => Math.max(0, c - 1));
-    } catch {}
-  };
-
-  const markAllRead = async () => {
-    try {
-      await api.patch('/notifications/read-all');
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-      toast.success('All marked as read');
-    } catch {}
-  };
-
-  const deleteNotif = async (id) => {
-    try {
-      await api.delete(`/notifications/${id}`);
-      setNotifications((prev) => prev.filter((n) => n._id !== id));
-      toast.success('Deleted');
-    } catch {}
-  };
 
   const timeAgo = (d) => {
     const diff = (Date.now() - new Date(d)) / 1000;
@@ -72,76 +32,63 @@ const NotificationsPage = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 max-w-7xl mx-auto text-left">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">Notifications</h1>
-          {unreadCount > 0 && (
-            <p className="text-sm text-slate-400 mt-1">{unreadCount} unread</p>
-          )}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e6e9f6] dark:bg-[#1e2027] text-slate-700 dark:text-slate-300 mb-2">
+            <span>Email Delivery System</span>
+          </div>
+          <h1 className="text-3xl font-black text-[#111827] dark:text-white tracking-tight">Email Alerts & Audit Log</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            All assignment updates, exam dates, low attendance alerts, and placement postings are delivered directly to <strong className="text-[#111827] dark:text-white">{user?.email}</strong>.
+          </p>
         </div>
-        {unreadCount > 0 && (
-          <button onClick={markAllRead} className="btn-secondary flex items-center gap-2 text-sm">
-            <CheckCheck className="w-4 h-4" /> Mark all read
-          </button>
-        )}
       </div>
 
-      <div className="space-y-2">
-        <AnimatePresence>
-          {notifications.map((n) => {
-            const Icon = typeIcons[n.type] || Bell;
-            const color = typeColors[n.type] || '#8B5CF6';
-            return (
-              <motion.div
-                key={n._id}
-                className={`glass-card px-5 py-4 flex items-start gap-4 group ${!n.isRead ? 'border-l-2' : ''}`}
-                style={!n.isRead ? { borderLeftColor: color } : {}}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 10, height: 0 }}
-                layout
-              >
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                  style={{ background: color + '20' }}
-                >
-                  <Icon className="w-5 h-5" style={{ color }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <p className={`text-sm font-semibold ${n.isRead ? 'text-slate-300' : 'text-white'}`}>{n.title}</p>
-                    {!n.isRead && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />}
-                  </div>
-                  <p className="text-xs text-slate-400 line-clamp-2">{n.message}</p>
-                  <p className="text-[10px] text-slate-500 mt-1">{timeAgo(n.createdAt)}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {!n.isRead && (
-                    <button
-                      onClick={() => markRead(n._id)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 transition-colors"
-                      title="Mark read"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteNotif(n._id)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+      {/* Email Delivery Notice Card */}
+      <div className="card-popout bg-[#f8f9fd] dark:bg-[#16181d] border border-[#e2e5f0] dark:border-[#272a33] rounded-3xl p-6 flex items-start gap-4">
+        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center shrink-0">
+          <ShieldCheck className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="text-sm font-bold text-[#111827] dark:text-white mb-1">Automated Nodemailer Dispatch</h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            UniSphere automatically triggers branded HTML emails for 24-hour assignment deadlines, examination timetables, and attendance warnings whenever you drop below the mandatory 75% threshold.
+          </p>
+        </div>
+      </div>
+
+      {/* Audit Log Feed */}
+      <div className="space-y-3">
+        {notifications.map((n) => (
+          <motion.div
+            key={n._id}
+            className="card-popout bg-white dark:bg-[#18191d] border border-[#e2e5f0] dark:border-[#26282e] rounded-2xl p-5 flex items-start gap-4"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="w-9 h-9 rounded-full bg-[#f8f9fd] dark:bg-[#141518] border border-[#e2e5f0] dark:border-[#2b2e38] flex items-center justify-center flex-shrink-0 text-[#111827] dark:text-white">
+              <Mail className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <p className="text-sm font-bold text-[#111827] dark:text-white">{n.title || n.subject}</p>
+                <span className="text-[10px] font-medium text-slate-400">{timeAgo(n.createdAt)}</span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">{n.message}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="badge-chip capitalize text-[9px]">{n.type || 'alert'}</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Delivered via SMTP</span>
+              </div>
+            </div>
+          </motion.div>
+        ))}
         {notifications.length === 0 && (
-          <div className="glass-card p-12 text-center">
-            <Bell className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-400">You're all caught up!</p>
+          <div className="bg-white dark:bg-[#18191d] border border-[#e2e5f0] dark:border-[#26282e] rounded-3xl p-12 text-center">
+            <Mail className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <p className="text-sm font-bold text-[#111827] dark:text-white">No email dispatches recorded</p>
+            <p className="text-xs text-slate-500 mt-1">Campus updates and automated alerts will appear here as they are emailed to you.</p>
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 require('dotenv').config();
-// UniSphere Super-App Server with AI Engine (Groq + Claude + MongoDB)
+// UniSphere Academic Platform Server with AI Engine & Instant Auth
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -10,6 +10,7 @@ const path = require('path');
 const connectDB = require('./config/db');
 const corsOptions = require('./config/corsOptions');
 const errorHandler = require('./middleware/errorHandler');
+const { initCronJobs } = require('./utils/cronJobs');
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
@@ -23,16 +24,22 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB & initialize cron jobs
+connectDB().then(() => {
+  initCronJobs();
+});
 
 const app = express();
+
+// Trust reverse proxy for HTTPS cookie handling on Render/Vercel
+app.set('trust proxy', 1);
 
 // Security & parsing middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

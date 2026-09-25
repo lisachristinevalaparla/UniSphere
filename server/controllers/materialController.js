@@ -1,4 +1,6 @@
 const CourseMaterial = require('../models/CourseMaterial');
+const User = require('../models/User');
+const { notify } = require('../utils/notifyHelper');
 const path = require('path');
 const fs = require('fs');
 
@@ -29,6 +31,27 @@ const uploadMaterial = async (req, res, next) => {
         path: req.file.path,
       },
     });
+
+    // Notify enrolled students via email
+    const query = { role: 'student' };
+    if (targetDepartment) query.department = targetDepartment;
+    const students = await User.find(query).select('_id');
+    const studentIds = students.map((s) => s._id);
+
+    if (studentIds.length) {
+      await notify({
+        recipients: studentIds,
+        title: `New Study Material: ${title}`,
+        message: `New verified course material has been uploaded for ${subject || 'your module'}. Access it now on UniSphere.`,
+        type: 'material',
+        link: '/materials',
+        metadata: {
+          Subject: subject || 'Academic Course',
+          'File Name': req.file.originalname,
+          Type: type || 'Notes',
+        },
+      });
+    }
 
     res.status(201).json({ material });
   } catch (error) {
@@ -76,12 +99,19 @@ const getMaterial = async (req, res, next) => {
 const downloadMaterial = async (req, res, next) => {
   try {
     const material = await CourseMaterial.findById(req.params.id);
-    if (!material || !material.file) return res.status(404).json({ message: 'File not found' });
+    if (!material || !material.file?.path) {
+      return res.status(404).json({ message: 'File not found' });
+    }
 
-    material.downloadCount += 1;
+    material.downloadCount = (material.downloadCount || 0) + 1;
     await material.save();
 
-    res.download(material.file.path, material.file.originalName);
+    const filePath = path.resolve(material.file.path);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    res.download(filePath, material.file.originalName);
   } catch (error) {
     next(error);
   }
@@ -91,16 +121,24 @@ const downloadMaterial = async (req, res, next) => {
 // @route DELETE /api/materials/:id
 const deleteMaterial = async (req, res, next) => {
   try {
-    const material = await CourseMaterial.findByIdAndDelete(req.params.id);
+    const material = await CourseMaterial.findById(req.params.id);
     if (!material) return res.status(404).json({ message: 'Material not found' });
-    // Optionally delete file from disk
+
     if (material.file?.path && fs.existsSync(material.file.path)) {
       fs.unlinkSync(material.file.path);
     }
-    res.json({ message: 'Material deleted' });
+
+    await material.deleteOne();
+    res.json({ message: 'Material deleted successfully' });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { uploadMaterial, getMaterials, getMaterial, downloadMaterial, deleteMaterial };
+module.exports = {
+  uploadMaterial,
+  getMaterials,
+  getMaterial,
+  downloadMaterial,
+  deleteMaterial,
+};

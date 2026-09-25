@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, FileText, Download, Search, Trash2 } from 'lucide-react';
+import { Plus, FileText, Download, Search, Trash2, ArrowUpRight } from 'lucide-react';
 import api from '../api/axios';
 import useAuthStore from '../store/authStore';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -12,11 +12,6 @@ const formatSize = (bytes) => {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1048576).toFixed(1)} MB`;
-};
-
-const typeColors = {
-  lecture_notes: 'badge-indigo', assignment_doc: 'badge-yellow', reference: 'badge-cyan',
-  lab_manual: 'badge-green', previous_paper: 'badge-blue', other: 'badge-gray',
 };
 
 const MaterialsPage = () => {
@@ -35,7 +30,7 @@ const MaterialsPage = () => {
     try {
       const url = subjectQ ? `/materials?subject=${encodeURIComponent(subjectQ)}&limit=40` : '/materials?limit=40';
       const res = await api.get(url);
-      setMaterials(res.data.materials);
+      setMaterials(res.data.materials || []);
     } catch {}
     setLoading(false);
   };
@@ -56,165 +51,161 @@ const MaterialsPage = () => {
       Object.entries(form).forEach(([k, v]) => { if (k !== 'file' && v) fd.append(k, v); });
       fd.append('file', form.file);
       await api.post('/materials', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      toast.success('Material uploaded!');
+      toast.success('Course material uploaded & student notifications dispatched!');
       setUploadOpen(false);
       fetchMaterials();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Upload failed');
+      toast.error(err.response?.data?.message || 'Error uploading material');
     }
     setSubmitting(false);
   };
 
-  const downloadMaterial = async (m) => {
-    try {
-      const res = await api.get(`/materials/${m._id}/download`, { responseType: 'blob' });
-      const url = URL.createObjectURL(res.data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = m.file?.originalName || m.title;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      toast.error('Download failed');
-    }
-  };
-
   const deleteMaterial = async (id) => {
-    if (!confirm('Delete this material?')) return;
+    if (!confirm('Are you sure you want to remove this resource?')) return;
     try {
       await api.delete(`/materials/${id}`);
-      toast.success('Deleted');
-      setMaterials((prev) => prev.filter((m) => m._id !== id));
-    } catch { toast.error('Delete failed'); }
-  };
-
-  const fileIcon = (mime) => {
-    if (mime?.includes('pdf')) return '📄';
-    if (mime?.includes('presentation') || mime?.includes('powerpoint')) return '📊';
-    if (mime?.includes('word') || mime?.includes('document')) return '📝';
-    if (mime?.includes('image')) return '🖼️';
-    return '📁';
+      toast.success('Resource removed');
+      fetchMaterials();
+    } catch {}
   };
 
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="page-title">Course Materials</h1>
-        <div className="flex items-center gap-3">
-          <form onSubmit={handleSearch} className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input
-                className="input-field pl-9 py-2 w-52"
-                placeholder="Search subject…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </form>
-          {user?.role !== 'student' && (
-            <button onClick={() => setUploadOpen(true)} className="btn-primary flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Upload
-            </button>
-          )}
+    <div className="space-y-8 max-w-7xl mx-auto text-left">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e6e9f6] dark:bg-[#1e2027] text-slate-700 dark:text-slate-300 mb-2">
+            <span>Academic Resource Library</span>
+          </div>
+          <h1 className="text-3xl font-black text-[#111827] dark:text-white tracking-tight">Course Materials</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Download verified lecture notes, question banks, lab manuals, and syllabus roadmaps.
+          </p>
         </div>
+        {user?.role !== 'student' && (
+          <button onClick={() => setUploadOpen(true)} className="btn-pill-primary text-xs">
+            <Plus className="w-4 h-4" />
+            <span>Upload Resource</span>
+          </button>
+        )}
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Search Bar */}
+      <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by course subject..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-field pl-11"
+          />
+        </div>
+        <button type="submit" className="btn-pill-secondary text-xs px-5">
+          Filter
+        </button>
+      </form>
+
+      {/* Materials Grid */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {materials.map((m) => (
           <motion.div
             key={m._id}
-            className="glass-card p-5 flex flex-col gap-3 group"
-            initial={{ opacity: 0, scale: 0.96 }}
+            className="card-popout bg-white dark:bg-[#18191d] border border-[#e2e5f0] dark:border-[#26282e] rounded-3xl p-6 flex flex-col justify-between"
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ y: -2 }}
           >
-            <div className="flex items-start gap-3">
-              <div className="text-3xl flex-shrink-0">{fileIcon(m.file?.mimetype)}</div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-white text-sm truncate">{m.title}</h3>
-                <p className="text-xs text-slate-400">{m.subject} {m.subjectCode ? `· ${m.subjectCode}` : ''}</p>
+            <div>
+              <div className="flex items-start justify-between mb-3">
+                <span className="badge-chip capitalize text-[10px]">{m.type?.replace('_', ' ') || 'Notes'}</span>
+                <span className="text-[11px] text-slate-400">{formatSize(m.file?.size)}</span>
               </div>
+              <h3 className="font-bold text-sm sm:text-base text-[#111827] dark:text-white line-clamp-1">{m.title}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">{m.subject} {m.subjectCode ? `&bull; ${m.subjectCode}` : ''}</p>
+              {m.description && <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">{m.description}</p>}
             </div>
-            {m.description && <p className="text-xs text-slate-400 line-clamp-2">{m.description}</p>}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`badge ${typeColors[m.type] || 'badge-gray'}`}>
-                {m.type?.replace('_', ' ')}
+
+            <div className="mt-5 pt-4 border-t border-[#e2e5f0] dark:border-[#22242a] flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 truncate max-w-[140px]">
+                By {m.uploadedBy?.name || 'Faculty'}
               </span>
-              {m.tags?.map((t) => <span key={t} className="badge badge-gray">{t}</span>)}
-            </div>
-            <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
-              <div className="text-[10px] text-slate-500">
-                {formatSize(m.file?.size)} · {m.downloadCount} downloads
-              </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 {user?.role !== 'student' && (
                   <button
                     onClick={() => deleteMaterial(m._id)}
-                    className="opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-300 transition-opacity"
+                    className="p-1.5 rounded-full text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                    title="Delete"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button
-                  onClick={() => downloadMaterial(m)}
-                  className="flex items-center gap-1.5 btn-primary text-xs px-3 py-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download
-                </button>
+                {m.file?.path ? (
+                  <a
+                    href={`http://localhost:5000/${m.file.path}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-pill-primary text-xs py-1.5 px-3.5 inline-flex items-center gap-1"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>Download</span>
+                  </a>
+                ) : (
+                  <span className="text-[10px] text-slate-400">Preview</span>
+                )}
               </div>
             </div>
           </motion.div>
         ))}
         {materials.length === 0 && (
-          <div className="glass-card p-12 text-center col-span-3">
-            <FileText className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-400">No materials found</p>
+          <div className="bg-white dark:bg-[#18191d] border border-[#e2e5f0] dark:border-[#26282e] rounded-3xl p-12 text-center col-span-3">
+            <FileText className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <p className="text-sm font-bold text-[#111827] dark:text-white">No course materials found</p>
+            <p className="text-xs text-slate-500 mt-1">Try another search filter or ask your department professor.</p>
           </div>
         )}
       </div>
 
       {/* Upload Modal */}
-      <Modal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} title="Upload Material" size="md">
-        <form onSubmit={uploadMaterial} className="space-y-4">
+      <Modal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} title="Upload Course Material" size="md">
+        <form onSubmit={uploadMaterial} className="space-y-4 text-left">
           <div>
-            <label className="label">Title</label>
-            <input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+            <label className="label">Resource Title</label>
+            <input className="input-field" placeholder="Unit 4 Concurrency & Deadlocks Notes" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+          </div>
+          <div>
+            <label className="label">Description / Summary</label>
+            <textarea className="input-field min-h-[70px] resize-none" placeholder="Covers semaphores, mutex locks, and previous exam questions..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Subject</label>
-              <input className="input-field" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required />
+              <input className="input-field" placeholder="Operating Systems" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required />
             </div>
             <div>
-              <label className="label">Type</label>
+              <label className="label">Resource Type</label>
               <select className="input-field" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                {['lecture_notes','assignment_doc','reference','lab_manual','previous_paper','other'].map(t => (
-                  <option key={t} value={t}>{t.replace('_', ' ')}</option>
+                {['lecture_notes', 'assignment_doc', 'reference', 'lab_manual', 'previous_paper', 'other'].map((t) => (
+                  <option key={t} value={t} className="capitalize">{t.replace('_', ' ')}</option>
                 ))}
               </select>
             </div>
           </div>
           <div>
-            <label className="label">Tags (comma separated)</label>
-            <input className="input-field" placeholder="unit1, important" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
-          </div>
-          <div>
-            <label className="label">File</label>
+            <label className="label">Select File (PDF, DOCX, ZIP)</label>
             <input
               type="file"
-              className="input-field py-2 text-slate-300 cursor-pointer"
-              accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,.png,.jpg"
               onChange={(e) => setForm({ ...form, file: e.target.files[0] })}
+              className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#111827] file:text-white dark:file:bg-white dark:file:text-black cursor-pointer"
               required
             />
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setUploadOpen(false)} className="btn-secondary flex-1">Cancel</button>
-            <button type="submit" className="btn-primary flex-1" disabled={submitting}>
-              {submitting ? 'Uploading...' : 'Upload'}
+          <div className="flex gap-3 pt-3">
+            <button type="button" onClick={() => setUploadOpen(false)} className="btn-pill-secondary flex-1">Cancel</button>
+            <button type="submit" className="btn-pill-primary flex-1" disabled={submitting}>
+              {submitting ? 'Uploading...' : 'Upload & Notify ↗'}
             </button>
           </div>
         </form>

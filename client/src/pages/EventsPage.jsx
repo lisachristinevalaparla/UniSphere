@@ -1,16 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Calendar, MapPin, Users, Check } from 'lucide-react';
+import { Plus, Calendar, MapPin, Users, Check, ArrowUpRight } from 'lucide-react';
 import api from '../api/axios';
 import useAuthStore from '../store/authStore';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
-
-const categoryColors = {
-  academic: 'badge-blue', cultural: 'badge-cyan', sports: 'badge-green',
-  technical: 'badge-indigo', club: 'badge-violet', placement: 'badge-yellow', other: 'badge-gray',
-};
 
 const EventsPage = () => {
   const { user } = useAuthStore();
@@ -25,24 +20,24 @@ const EventsPage = () => {
   const fetchEvents = async () => {
     try {
       const res = await api.get('/events?limit=30');
-      setEvents(res.data.events);
+      setEvents(res.data.events || []);
     } catch {}
     setLoading(false);
   };
 
   useEffect(() => { fetchEvents(); }, []);
 
-  const rsvp = async (eventId, currentRSVP) => {
+  const rsvp = async (eventId) => {
     try {
       const res = await api.post(`/events/${eventId}/rsvp`);
-      toast.success(res.data.hasRSVPed ? 'RSVP confirmed!' : 'RSVP removed');
+      toast.success(res.data.hasRSVPed ? 'RSVP registered successfully!' : 'RSVP cancelled');
       setEvents((prev) =>
         prev.map((e) =>
           e._id === eventId ? { ...e, hasRSVPed: res.data.hasRSVPed, rsvpCount: res.data.rsvpCount } : e
         )
       );
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || 'Error processing RSVP');
     }
   };
 
@@ -51,7 +46,7 @@ const EventsPage = () => {
     setSubmitting(true);
     try {
       await api.post('/events', form);
-      toast.success('Event created!');
+      toast.success('Campus event created & email notifications dispatched!');
       setCreateOpen(false);
       fetchEvents();
     } catch (err) {
@@ -60,114 +55,110 @@ const EventsPage = () => {
     setSubmitting(false);
   };
 
-  const formatDateRange = (start, end) => {
-    const s = new Date(start).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    if (!end) return s;
-    const e = new Date(end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    return s === e ? s : `${s} – ${e}`;
-  };
-
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="page-title">Events & Clubs</h1>
+    <div className="space-y-8 max-w-7xl mx-auto text-left">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#e6e9f6] dark:bg-[#1e2027] text-slate-700 dark:text-slate-300 mb-2">
+            <span>Campus Activities</span>
+          </div>
+          <h1 className="text-3xl font-black text-[#111827] dark:text-white tracking-tight">Events & Clubs</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Discover annual hackathons, technical workshops, guest lectures, and cultural club meetups.
+          </p>
+        </div>
         {user?.role !== 'student' && (
-          <button onClick={() => setCreateOpen(true)} className="btn-primary flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Create Event
+          <button onClick={() => setCreateOpen(true)} className="btn-pill-primary text-xs">
+            <Plus className="w-4 h-4" />
+            <span>Create Campus Event</span>
           </button>
         )}
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Events Grid */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map((ev) => (
           <motion.div
             key={ev._id}
-            className="glass-card overflow-hidden group"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -3 }}
+            className="card-popout bg-white dark:bg-[#18191d] border border-[#e2e5f0] dark:border-[#26282e] rounded-3xl p-6 flex flex-col justify-between"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
           >
-            {/* Header strip */}
-            <div className="h-2 w-full" style={{
-              background: ev.category === 'academic' ? 'linear-gradient(90deg,#6366F1,#4F46E5)' :
-                ev.category === 'cultural' ? 'linear-gradient(90deg,#22D3EE,#06B6D4)' :
-                ev.category === 'sports' ? 'linear-gradient(90deg,#10B981,#059669)' :
-                ev.category === 'technical' ? 'linear-gradient(90deg,#8B5CF6,#6D28D9)' :
-                'linear-gradient(90deg,#F59E0B,#D97706)',
-            }} />
-            <div className="p-5 space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-white truncate">{ev.title}</h3>
-                  <span className={`badge mt-1 ${categoryColors[ev.category] || 'badge-gray'}`}>{ev.category}</span>
-                </div>
-                <span className={`badge flex-shrink-0 ${ev.status === 'upcoming' ? 'badge-blue' : ev.status === 'ongoing' ? 'badge-green' : 'badge-gray'}`}>
-                  {ev.status}
+            <div>
+              <div className="flex items-start justify-between mb-3">
+                <span className="badge-chip capitalize text-[10px]">{ev.category}</span>
+                <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  {ev.rsvpCount || 0} attending
                 </span>
               </div>
-              {ev.description && <p className="text-xs text-slate-400 line-clamp-2">{ev.description}</p>}
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <Calendar className="w-3.5 h-3.5 flex-shrink-0" /> {formatDateRange(ev.startDate, ev.endDate)}
+              <h3 className="font-bold text-base text-[#111827] dark:text-white line-clamp-1">{ev.title}</h3>
+              {ev.description && <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">{ev.description}</p>}
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-[#e2e5f0] dark:border-[#22242a] flex items-center justify-between">
+              <div className="space-y-1 text-xs text-slate-500">
+                <div className="flex items-center gap-1.5 font-medium">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{new Date(ev.startDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
                 </div>
-                {ev.venue && (
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" /> {ev.venue}
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <Users className="w-3.5 h-3.5 flex-shrink-0" /> {ev.rsvpCount ?? ev.rsvpList?.length ?? 0} RSVPs
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  <MapPin className="w-3 h-3" />
+                  <span className="truncate max-w-[120px]">{ev.venue || 'Campus Auditorium'}</span>
                 </div>
               </div>
-              {user?.role === 'student' && (
-                <button
-                  onClick={() => rsvp(ev._id, ev.hasRSVPed)}
-                  className={`w-full flex items-center justify-center gap-2 text-sm py-2 rounded-lg transition-all ${
-                    ev.hasRSVPed
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
-                      : 'btn-secondary'
-                  }`}
-                >
-                  {ev.hasRSVPed ? <><Check className="w-4 h-4" /> Going</> : 'RSVP'}
-                </button>
-              )}
+
+              <button
+                onClick={() => rsvp(ev._id)}
+                className={`text-xs py-2 px-4 rounded-full font-semibold transition-all flex items-center gap-1.5 ${
+                  ev.hasRSVPed
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300'
+                    : 'btn-pill-primary'
+                }`}
+              >
+                {ev.hasRSVPed ? <><Check className="w-3.5 h-3.5" /> Registered</> : 'RSVP Now'}
+              </button>
             </div>
           </motion.div>
         ))}
         {events.length === 0 && (
-          <div className="glass-card p-12 text-center col-span-3">
-            <Calendar className="w-12 h-12 text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-400">No events yet</p>
+          <div className="bg-white dark:bg-[#18191d] border border-[#e2e5f0] dark:border-[#26282e] rounded-3xl p-12 text-center col-span-3">
+            <Calendar className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <p className="text-sm font-bold text-[#111827] dark:text-white">No active events posted</p>
+            <p className="text-xs text-slate-500 mt-1">Campus clubs and event coordinators will post upcoming drives here.</p>
           </div>
         )}
       </div>
 
       {/* Create Modal */}
-      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Create Event" size="md">
-        <form onSubmit={createEvent} className="space-y-4">
+      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Create Campus Event" size="md">
+        <form onSubmit={createEvent} className="space-y-4 text-left">
           <div>
-            <label className="label">Title</label>
-            <input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+            <label className="label">Event Title</label>
+            <input className="input-field" placeholder="Annual 36-Hour Hackathon 2026" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
           </div>
           <div>
-            <label className="label">Description</label>
-            <textarea className="input-field resize-none min-h-[80px]" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <label className="label">Description & Agenda</label>
+            <textarea className="input-field min-h-[70px] resize-none" placeholder="Details, eligibility criteria, prize pool..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Category</label>
               <select className="input-field" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                {['academic','cultural','sports','technical','club','placement','other'].map(c => (
-                  <option key={c} value={c}>{c}</option>
+                {['academic', 'technical', 'cultural', 'sports', 'club', 'placement', 'other'].map((c) => (
+                  <option key={c} value={c} className="capitalize">{c}</option>
                 ))}
               </select>
             </div>
             <div>
               <label className="label">Venue</label>
-              <input className="input-field" placeholder="Auditorium" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} />
+              <input className="input-field" placeholder="Seminar Hall A" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Start Date</label>
               <input type="datetime-local" className="input-field" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
@@ -177,10 +168,10 @@ const EventsPage = () => {
               <input type="datetime-local" className="input-field" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
             </div>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => setCreateOpen(false)} className="btn-secondary flex-1">Cancel</button>
-            <button type="submit" className="btn-primary flex-1" disabled={submitting}>
-              {submitting ? 'Creating...' : 'Create Event'}
+          <div className="flex gap-3 pt-3">
+            <button type="button" onClick={() => setCreateOpen(false)} className="btn-pill-secondary flex-1">Cancel</button>
+            <button type="submit" className="btn-pill-primary flex-1" disabled={submitting}>
+              {submitting ? 'Publishing...' : 'Publish Event & Notify ↗'}
             </button>
           </div>
         </form>
