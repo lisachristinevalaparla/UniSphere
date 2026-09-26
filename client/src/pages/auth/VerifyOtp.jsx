@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
 import useThemeStore from '../../store/useThemeStore';
 import FloatingControlPill from '../../components/FloatingControlPill';
-import SlicedWaves from '../../components/SlicedWaves';
+import GradientWaves from '../../components/GradientWaves';
 
 const VerifyOtp = () => {
   const location = useLocation();
@@ -78,99 +78,102 @@ const VerifyOtp = () => {
 
   return (
     <div className="relative min-h-screen bg-[#f8f9fd] text-[#121212] dark:bg-[#0e0f12] dark:text-[#f3f4f6] flex flex-col justify-between p-4 sm:p-6 transition-colors duration-200 overflow-hidden">
-      {/* SlicedWaves Background Animation */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-85 dark:opacity-40">
-        <SlicedWaves
-          color1={isDark ? '#c084fc' : '#f5dde9'}
-          color2={isDark ? '#581c87' : '#d1c1ea'}
-          color3={isDark ? '#38bdf8' : '#c4e6ec'}
-          columns={14}
-          rows={8}
-          barThickness={0.1}
-          speed={0.35}
-          travel={0.7}
-          waveSpread={0.9}
-          rowOffset={1.0}
-          softness={0.05}
-          glow={0}
+      {/* GradientWaves Background Animation */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <GradientWaves
+          horizonColor={isDark ? '#3b0764' : '#5227FF'}
+          waveColor={isDark ? '#9333ea' : '#FF9FFC'}
+          crestColor={isDark ? '#f472b6' : '#FFFFFF'}
+          speed={0.4}
+          amplitude={2.5}
+          waveScale={0.6}
+          waveRatio={0.9}
+          swell={35}
+          turbulence={20}
+          tilt={1.11}
+          zoom={1.0}
+          height={5.5}
+          fogDepth={15}
+          detail="medium"
           brightness={1.0}
-          contrast={1.0}
-          opacity={0.9}
-          orientation="horizontal"
-          alternate={false}
+          opacity={1.0}
           mouseInteraction={true}
-          mouseStrength={1}
-          mouseRadius={0.3}
+          parallaxStrength={0.5}
           grain={true}
-          grainIntensity={0.018}
-          lightMode={!isDark}
+          grainIntensity={0.05}
         />
       </div>
 
       {/* Top Header */}
-      <header className="relative z-10 max-w-6xl mx-auto w-full flex items-center justify-between py-4">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-2xl bg-[#111827] dark:bg-white flex items-center justify-center text-white dark:text-[#111827] shadow-md transition-transform group-hover:scale-105">
-            <GraduationCap className="w-5 h-5" />
+      <header className="relative z-10 max-w-6xl mx-auto w-full flex items-center justify-between py-2 sm:py-4">
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="w-8 h-8 rounded-full bg-[#111827] dark:bg-white flex items-center justify-center text-white dark:text-[#111827] shadow-sm">
+            <GraduationCap className="w-4 h-4" />
           </div>
-          <span className="font-extrabold text-xl tracking-tight text-[#111827] dark:text-white">UniSphere</span>
+          <span className="font-extrabold text-lg tracking-tight text-[#111827] dark:text-white">UniSphere</span>
         </Link>
 
         <Link
           to="/login"
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-md border border-[#e2e5f0] dark:border-white/10 text-xs font-semibold text-[#4b5563] dark:text-[#9ca3af] hover:text-black dark:hover:text-white transition-all shadow-sm hover:shadow"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4b5563] dark:text-[#9ca3af] hover:text-black dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Sign In</span>
         </Link>
       </header>
 
-      {/* Main Form Container - Enlarged & Polished */}
-      <main className="relative z-10 flex-1 flex items-center justify-center py-10 px-2">
+      {/* Main Form Container - Same dimensions as Login and Register */}
+      <main className="relative z-10 flex-1 flex items-center justify-center py-6 px-3">
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-[640px] bg-white/95 dark:bg-[#18191d]/95 backdrop-blur-xl border border-[#e2e5f0] dark:border-[#272a33] rounded-[2rem] p-6 sm:p-9 shadow-2xl text-left card-depth"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="w-full max-w-[490px] bg-white/95 dark:bg-[#18191d]/95 backdrop-blur-xl border border-[#e8ecf4] dark:border-[#272a33] rounded-[2.25rem] p-6 sm:p-9 shadow-[0_20px_50px_rgba(100,100,140,0.12)] dark:shadow-2xl text-left"
         >
           {/* Badge & Icon */}
-          <div className="flex items-center justify-between mb-7">
-            <div className="w-13 h-13 p-3 rounded-2xl bg-[#e6e9f6] dark:bg-[#252831] flex items-center justify-center text-[#111827] dark:text-white shadow-sm">
-              <ShieldCheck className="w-6 h-6" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-11 h-11 rounded-full bg-[#eef4ff] dark:bg-[#252831] flex items-center justify-center text-[#111827] dark:text-white">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-            <span className="badge-chip text-xs px-3.5 py-1 font-bold">Email Verification</span>
+            <span className="px-3.5 py-1 rounded-full bg-[#eef4ff] dark:bg-[#252831] text-slate-600 dark:text-slate-300 text-xs font-semibold">
+              Email Verification
+            </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#111827] dark:text-white mb-2.5">
+          <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-[#111827] dark:text-white mb-1.5">
             Enter security code.
           </h1>
-          <p className="text-xs sm:text-sm text-[#4b5563] dark:text-[#9ca3af] leading-relaxed mb-7">
+          <p className="text-xs sm:text-[13px] text-[#64748b] dark:text-[#9ca3af] leading-relaxed mb-6">
             We’ve sent a 6-digit verification code to{' '}
             <strong className="text-[#111827] dark:text-white">{email || 'your email'}</strong>. Enter it below to activate your university workspace.
           </p>
 
-          <form onSubmit={handleVerify} className="space-y-5">
+          <form onSubmit={handleVerify} className="space-y-4">
             {!emailFromQuery && (
               <div>
-                <label className="label text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 block">University Email</label>
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#475569] dark:text-[#94a3b8] mb-1.5 block">
+                  University Email
+                </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
                   <input
                     type="email"
                     required
                     placeholder="student@university.edu"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input-field pl-11 py-3 sm:py-3.5 text-sm rounded-2xl bg-[#f8f9fd] dark:bg-[#131417] border-[#e2e5f0] dark:border-[#282a32]"
+                    className="w-full pl-11 pr-4 py-3 sm:py-3.5 rounded-2xl sm:rounded-full bg-[#eef4ff] dark:bg-[#131417] border border-transparent focus:border-[#93c5fd] dark:focus:border-[#6366f1] text-sm text-[#0f172a] dark:text-white placeholder-[#94a3b8] outline-none font-medium transition-all"
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="label text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 block">6-Digit Verification Code</label>
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#475569] dark:text-[#94a3b8] mb-1.5 block">
+                6-Digit Verification Code
+              </label>
               <div className="relative">
-                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
                 <input
                   type="text"
                   maxLength={6}
@@ -179,7 +182,7 @@ const VerifyOtp = () => {
                   placeholder="123456"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                  className="input-field pl-11 py-3 sm:py-3.5 tracking-widest text-base sm:text-lg font-bold font-mono rounded-2xl bg-[#f8f9fd] dark:bg-[#131417] border-[#e2e5f0] dark:border-[#282a32]"
+                  className="w-full pl-11 pr-4 py-3 sm:py-3.5 tracking-widest text-base font-bold font-mono rounded-2xl sm:rounded-full bg-[#eef4ff] dark:bg-[#131417] border border-transparent focus:border-[#93c5fd] dark:focus:border-[#6366f1] text-[#0f172a] dark:text-white placeholder-[#94a3b8] outline-none transition-all"
                 />
               </div>
             </div>
@@ -187,39 +190,37 @@ const VerifyOtp = () => {
             <button
               type="submit"
               disabled={isLoading || otp.length < 6}
-              className="btn-pill-primary w-full py-4 text-sm sm:text-base font-bold mt-3 shadow-lg hover:shadow-xl transition-all"
+              className="w-full py-3.5 sm:py-4 rounded-full bg-[#111827] hover:bg-black dark:bg-white dark:hover:bg-slate-100 text-white dark:text-[#111827] text-xs sm:text-sm font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] transition-all mt-3 cursor-pointer disabled:opacity-50"
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white/40 border-t-white dark:border-black/40 dark:border-t-black rounded-full animate-spin" />
               ) : (
-                <span className="text-container">
-                  <span className="text flex items-center justify-center gap-2">
-                    <span>Verify & Enter Workspace</span>
-                    <ArrowUpRight className="w-4 h-4" />
-                  </span>
+                <span className="flex items-center gap-2">
+                  <span>Verify & Enter Workspace</span>
+                  <ArrowUpRight className="w-4 h-4" />
                 </span>
               )}
             </button>
           </form>
 
           {/* Resend Cooldown */}
-          <div className="mt-7 pt-6 border-t border-[#e2e5f0] dark:border-[#22242a] flex items-center justify-between text-xs sm:text-sm">
-            <span className="text-[#6b7280] dark:text-[#9ca3af]">Didn't receive the code?</span>
+          <div className="mt-6 pt-5 border-t border-[#e8ecf4] dark:border-[#22242a] flex items-center justify-between text-xs sm:text-sm">
+            <span className="text-[#64748b] dark:text-[#9ca3af]">Didn't receive the code?</span>
             <button
               type="button"
               onClick={handleResend}
               disabled={cooldown > 0 || isResending}
-              className="font-bold text-[#111827] dark:text-white hover:underline disabled:opacity-40 disabled:no-underline inline-flex items-center gap-1.5"
+              className="font-bold text-[#111827] dark:text-white hover:underline disabled:opacity-40 disabled:no-underline inline-flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isResending ? 'animate-spin' : ''}`} />
-              {cooldown > 0 ? `Resend code (${cooldown}s)` : 'Resend code now'}
+              {cooldown > 0 ? `Resend (${cooldown}s)` : 'Resend code now'}
             </button>
           </div>
         </motion.div>
       </main>
 
       {/* Footer info */}
-      <footer className="relative z-10 max-w-6xl mx-auto w-full text-center py-4 text-xs text-slate-400">
+      <footer className="relative z-10 max-w-6xl mx-auto w-full text-center py-3 text-xs text-[#94a3b8]">
         UniSphere Academic &bull; Secure Email Verification &bull; Single-use token
       </footer>
 

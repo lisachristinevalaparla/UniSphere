@@ -102,8 +102,6 @@ export default function Dock({
     () => Math.max(dockHeight, magnification + 8),
     [magnification, dockHeight]
   );
-  const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
-  const height = useSpring(heightRow, spring);
 
   return (
     <div className={inline ? "dock-inline-container" : "dock-outer"}>

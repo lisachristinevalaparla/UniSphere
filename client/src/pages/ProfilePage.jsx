@@ -17,6 +17,8 @@ import {
   FileCheck,
   ExternalLink,
   Camera,
+  Sparkles,
+  Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from '../store/authStore';
